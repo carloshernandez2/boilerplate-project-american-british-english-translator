@@ -8,38 +8,41 @@ const _ = require("underscore");
 class Translator {
   translatable(text, only, spelling, titles, timeSplit) {
     const words = [];
+    const regexCreator = (word) => {
+      return new RegExp(`\\s${word}[\\s.?!]`, "i");
+    };
     for (const word in only) {
-      const regex = new RegExp(`\\s${word}\\s`);
+      const regex = regexCreator(word);
       if (regex.test(text))
         words.push({
           prev: word,
-          after: ` <span class="highlight">${only[word]}<span> `,
+          after: ` <span class="highlight">${only[word]}</span> `,
         });
     }
     for (const word in spelling) {
-      const regex = new RegExp(`\\s${word}\\s`);
+      const regex = regexCreator(word);
       if (regex.test(text))
         words.push({
           prev: word,
-          after: ` <span class="highlight">${spelling[word]}<span> `,
+          after: ` <span class="highlight">${spelling[word]}</span> `,
         });
     }
     for (const word in titles) {
-      const regex = new RegExp(`\\s${word}\\s`);
+      const regex = regexCreator(word);
       if (regex.test(text))
         words.push({
           prev: word,
-          after: ` <span class="highlight">${titles[word]}<span> `,
+          after: ` <span class="highlight">${titles[word]}</span> `,
         });
     }
-    const regex = new RegExp(`\\s\\d{2}[${timeSplit}]\\d{2}\\s`, "g");
-    const timesArray = text.match(regex) ? text.match(regex) : [];
+    const regex = new RegExp(`\\s(\\d\\d?[.:]\\d{2})[\\s.?!]`, "gi");
+    const timesArray = text.match(regex) ? [...text.matchAll(regex)] : [];
     return words.concat(
       timesArray.map((time) => ({
-        prev: time.trim(),
-        after: ` <span class="highlight">${time
+        prev: time[1],
+        after: ` <span class="highlight">${time[1]
           .replace(timeSplit, timeSplit === ":" ? "." : ":")
-          .trim()}<span> `,
+          }</span> `,
       }))
     );
   }
@@ -72,14 +75,17 @@ class Translator {
       locale === "american-to-british"
         ? this.translatableAmerican(spacedText)
         : this.translatableBrit(spacedText);
-    return (
-      wordsToTranslate
-        .reduce((acc, translation) => {
-          const regex = new RegExp(`\\s${translation.prev}\\s`);
-          return acc.replace(regex, translation.after);
-        }, spacedText)
-        .trim()
-    );
+    const translation = wordsToTranslate
+      .reduce((acc, translation) => {
+        const regex = new RegExp(`\\s${translation.prev}([\\s.?!])`, "gi");
+        return acc.replace(regex, (a, b) => {
+          const after =
+            translation.after.slice(0, translation.after.length - 1) + b;
+          return after;
+        });
+      }, spacedText)
+      .trim();
+    return translation === text ? "Everything looks good to me!" : translation;
   }
 }
 
