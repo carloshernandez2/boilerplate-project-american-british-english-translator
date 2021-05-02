@@ -70,7 +70,16 @@ class Translator {
   }
 
   translate(text, locale) {
-    const spacedText = " " + text.trim() + " ";
+    if (!locale) {
+      return { error: 'Required field(s) missing' }
+    } else if (text === '') {
+      return { error: 'No text to translate' }
+    } else if (!text) {
+      return { error: 'Required field(s) missing' }
+    } else if (!/^american-to-british$|^british-to-american$/.test(locale)) {
+      return { error: 'Invalid value for locale field' }
+    }else {
+      const spacedText = " " + text.trim() + " ";
     const wordsToTranslate =
       locale === "american-to-british"
         ? this.translatableAmerican(spacedText)
@@ -86,6 +95,7 @@ class Translator {
       }, spacedText)
       .trim();
     return translation === text ? "Everything looks good to me!" : translation;
+    }
   }
 }
 
